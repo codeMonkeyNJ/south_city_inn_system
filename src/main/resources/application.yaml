@@ -1,0 +1,62 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: south_city_inn_system
+  profiles:
+    active: dev
+  security:
+    user:
+      name: ${masun.security.user.name}
+      password: ${masun.security.user.password}
+  rabbitmq:
+    host: ${masun.rabbitmq.host}
+    port: 5672
+    virtual-host: ${masun.rabbitmq.virtual-host}
+    username: ${masun.rabbitmq.username}
+    password: ${masun.rabbitmq.password}
+    listener:
+      simple:
+        retry:
+          enabled: true # 开启消费者失败重试
+          initial-interval: 1000ms # 初始的失败等待时长为1秒
+          multiplier: 1 # 失败的等待时长倍数，下次等待时长 = multiplier * last-interval
+          stateless: false # true无状态；false有状态。如果业务中包含事务，这里改为false
+          max-retries: 3 # 最大重试次数
+  datasource:
+    url: jdbc:mysql://${masun.db.host}:3306/south_city_inn
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: ${masun.db.password}
+  data:
+    redis:
+      host: ${masun.redis.host}
+      port: 6379
+      database: 0
+      password: ${masun.redis.password}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 100ms
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+aliyun:
+  sms:
+    access-key-id: ${masun.aliyun.sms.access-key-id}
+    access-key-secret: ${masun.aliyun.sms.access-key-secret}
+jwt:
+  sign-key: ${masun.jwt.sign-key}
+
+zfb:
+  url: ${masun.zfb.url}
+  appid: ${masun.zfb.app-id}
+  privateKey: ${masun.zfb.private-key}
+  charset: UTF-8
+  alipayPublicKey: ${masun.zfb.alipay-public-key}
+  signType: ${masun.zfb.sign-type}
+  tradeswomen: ${masun.zfb.tradeswomen}
+

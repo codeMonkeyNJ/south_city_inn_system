@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.InventoryMapper">
+    <insert id="batchInsertED">
+        insert into enquiry_detail
+        <foreach collection="fields" item="field" open="(" separator="," close=")">
+            ${field}
+        </foreach>
+        values
+        <foreach item="detail" index="index" collection="enquiryDetails" separator=",">
+            (
+                <foreach collection="fields" item="field" separator=",">
+                    <if test="field == 'source_type'">
+                        #{detail.sourceType}
+                    </if>
+                    <if test="field == 'source_id'">
+                        #{detail.sourceId}
+                    </if>
+                    <if test="field == 'material_id'">
+                        #{detail.materialId}
+                    </if>
+                    <if test="field == 'num'">
+                        #{detail.num}
+                    </if>
+                    <if test="field == 'money'">
+                        #{detail.money}
+                    </if>
+                    <if test="field == 'remark'">
+                        #{detail.remark}
+                    </if>
+                </foreach>
+            )
+        </foreach>
+    </insert>
+    <insert id="batchInsertLog">
+        insert into store_material_log(repertory_id, operation, num, source_type, source_id)
+        values
+        <foreach item="log" index="index" collection="logs" separator=",">
+            (#{log.repertoryId},#{log.operation},#{log.num},#{log.sourceType},#{log.sourceId})
+        </foreach>
+    </insert>
+    <insert id="insertStoreAmendDetail">
+        insert into store_amend_detail(amend_id, repertory_id, num)
+        values
+        <foreach item="item" index="index" collection="repertoryList" separator=",">
+            (#{item.amendId},#{item.repertoryId},#{item.num})
+        </foreach>
+    </insert>
+    <update id="updateEnquiry">
+        update enquiry
+        <set>
+            <if test="applicantId != null" >
+                applicant_id = #{applicantId},
+            </if>
+            <if test="deptId != null" >
+                dept_id = #{deptId},
+            </if>
+            <if test="storeId != null" >
+                store_id = #{storeId},
+            </if>
+            <if test="no != null" >
+                no = #{no},
+            </if>
+            <if test="amount != null" >
+                amount = #{amount},
+            </if>
+            <if test="payType != null" >
+                pay_type = #{payType},
+            </if>
+            <if test="state != null" >
+                state = #{state},
+            </if>
+            <if test="attachment != null">
+                attachment = #{attachment},
+            </if>
+            <if test="reqCause != null" >
+                req_cause = #{reqCause},
+            </if>
+            <if test="respCause != null" >
+                resp_cause = #{respCause},
+            </if>
+            <if test="remark != null" >
+                remark = #{remark},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="batchUpdateRepertory">
+        update store_material
+        set sum = sum + case
+        <foreach item="item" index="index" collection="materialNumList">
+            when material_id = #{item.materialId} and store_id = #{item.storeId} then #{item.num}
+        </foreach>
+        end
+        where (store_id,material_id) IN
+        <foreach item="item" index="index" collection="materialNumList" separator="," open="(" close=")">
+            (#{item.storeId},#{item.materialId})
+        </foreach>
+    </update>
+    <update id="updateStoreAmendState">
+        update store_amend
+        set state = #{state}
+        <if test="cause != null and cause != ''">
+            ,cause = #{cause}
+        </if>
+        where id = #{id}
+    </update>
+    <update id="batchUpdateRepertoryByRID">
+        update store_material
+        set sum = sum + case id
+        <foreach item="item" index="index" collection="details">
+            when #{item.repertoryId} then #{item.num}
+        </foreach>
+        end
+        where id IN
+        <foreach item="item" index="index" collection="details" separator="," open="(" close=")">
+            #{item.repertoryId}
+        </foreach>
+        AND CASE id
+        <foreach item="item" collection="details">
+            WHEN #{item.repertoryId} THEN
+            <if test="item.num &lt; 0">sum + #{item.num}</if>
+            <if test="item.num &gt;= 0">1</if>
+        </foreach>
+        ELSE 1
+        END >= 0
+    </update>
+    <select id="countStore" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM store
+        <where>
+            <if test="name != null and name != '' ">
+                AND name LIKE CONCAT('%',#{name},'%')
+            </if>
+            <if test="validDeptIds != null">
+                AND dept_id IN
+                <foreach item="deptId" collection="validDeptIds" separator="," open="(" close=")" index="">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+
+    </select>
+    <select id="selectStoreList" resultType="com.mason.domain.vo.InventoryStoreSimpleVO">
+        SELECT id,dept_id,name,address FROM store
+        <where>
+            <if test="name != null and name != '' ">
+                AND name LIKE CONCAT('%',#{name},'%')
+            </if>
+            <if test="validDeptIds != null">
+                AND dept_id IN
+                <foreach item="deptId" collection="validDeptIds" separator="," open="(" close=")" index="">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY id
+        LIMIT #{skip},#{pageSize}
+    </select>
+    <select id="countSMByStoreId" resultType="java.lang.Integer">
+        select count(*)
+        from store_material sm
+        join material m on sm.material_id = m.id
+        left join material_class mc on m.class_id = mc.id
+        <where>
+            sm.store_id = #{id}
+            <if test="name != null and name != '' ">
+                AND m.name LIKE CONCAT('%',#{name},'%')
+            </if>
+            <if test="className != null">
+                AND mc.name like CONCAT('%',#{className},'%')
+            </if>
+        </where>
+    </select>
+    <select id="selectSMByStoreId" resultType="com.mason.domain.vo.InventoryMaterialVO">
+        select sm.id,sm.material_id,m.name,mc.name as className,sm.sum
+        from store_material sm
+        join material m on sm.material_id = m.id
+        left join material_class mc on m.class_id = mc.id
+        <where>
+            sm.store_id = #{id}
+            <if test="name != null and name != '' ">
+                AND m.name LIKE CONCAT('%',#{name},'%')
+            </if>
+            <if test="className != null and className != ''">
+                AND mc.name like CONCAT('%',#{className},'%')
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectLogByRepertoryId" resultType="com.mason.domain.po.StoreMaterialLog">
+        select id, operation, num, create_time,source_type, source_id
+        from store_material_log
+        <where>
+            repertory_id = #{id}
+            <if test="operation != null">
+                AND operation = #{operation}
+            </if>
+            <if test="startDate != null">
+                AND create_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND create_time &lt;= #{endDate}
+            </if>
+        </where>
+        <if test="lastId != null">
+            AND id &lt; #{lastId}
+        </if>
+        ORDER BY id DESC
+        LIMIT #{pageSize}
+    </select>
+    <select id="selectLastLogIdByRepertoryId" resultType="java.lang.Integer">
+        select id from store_material_log
+        <where>
+            repertory_id = #{id}
+            <if test="operation != null">
+                AND operation = #{operation}
+            </if>
+            <if test="startDate != null">
+                AND create_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND create_time &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+    <select id="countEnquiry" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM enquiry join dept on enquiry.dept_id = dept.id
+        <where>
+            <if test="applicantId != null">
+                AND enquiry.applicant_id = #{applicantId}
+            </if>
+            <if test="validDeptIds != null">
+                AND enquiry.dept_id IN
+                <foreach item="deptId" collection="validDeptIds" separator="," open="(" close=")" index="">
+                    #{deptId}
+                </foreach>
+            </if>
+            <if test="no != null">
+                AND enquiry.no = #{no}
+            </if>
+            <if test="state != null">
+                AND enquiry.state = #{state}
+            </if>
+            <if test="dept != null and dept != ''">
+                AND dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="minMoney != null">
+                AND enquiry.amount &gt;= #{minMoney}
+            </if>
+            <if test="maxMoney != null">
+                AND enquiry.amount &lt;= #{maxMoney}
+            </if>
+        </where>
+    </select>
+    <select id="selectEnquiryList" resultType="com.mason.domain.vo.InvEnqSimVO">
+        SELECT enquiry.id,outbound.id as outboundId, enquiry.amount, enquiry.state, dept.name as dept FROM enquiry
+        join dept on enquiry.dept_id = dept.id
+        left join outbound on outbound.enquiry_id = enquiry.id
+        <where>
+            <if test="applicantId != null">
+                AND enquiry.applicant_id = #{applicantId}
+            </if>
+            <if test="validDeptIds != null">
+                AND enquiry.dept_id IN
+                <foreach item="deptId" collection="validDeptIds" separator="," open="(" close=")" index="">
+                    #{deptId}
+                </foreach>
+            </if>
+            <if test="no != null">
+                AND enquiry.no = #{no}
+            </if>
+            <if test="state != null">
+                AND enquiry.state = #{state}
+            </if>
+            <if test="dept != null and dept != ''">
+                AND dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="minMoney != null">
+                AND enquiry.amount &gt;= #{minMoney}
+            </if>
+            <if test="maxMoney != null">
+                AND enquiry.amount &lt;= #{maxMoney}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="countOutbound" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM outbound o
+        join user_info ui on o.stocker_id = ui.user_id
+        join store s on o.store_out_id = s.id
+        join dept d on s.dept_id = d.id
+        <where>
+            <if test="validStoreIds != null">
+                AND o.store_out_id IN
+                <foreach item="storeId" collection="validStoreIds" separator="," open="(" close=")" index="">
+                    #{storeId}
+                </foreach>
+            </if>
+            <if test="no != null">
+                AND o.no like concat(#{no},'%')
+            </if>
+            <if test="stocker != null">
+                AND ui.name like concat('%',#{stocker},'%')
+            </if>
+            <if test="store != null">
+                AND s.name like concat('%',#{store},'%')
+            </if>
+            <if test="dept != null">
+                AND d.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                AND o.state = #{state}
+            </if>
+        </where>
+    </select>
+    <select id="selectOutboundList" resultType="com.mason.domain.vo.InvOutSimVO">
+        SELECT o.id,o.no,ui.name as stocker,s.name as store,d.name as dept,o.state, o.update_time
+        FROM outbound o
+        join user_info ui on o.stocker_id = ui.user_id
+        join store s on o.store_out_id = s.id
+        join dept d on s.dept_id = d.id
+        <where>
+            <if test="validStoreIds != null">
+                AND o.store_out_id IN
+                <foreach item="storeId" collection="validStoreIds" separator="," open="(" close=")" index="">
+                    #{storeId}
+                </foreach>
+            </if>
+            <if test="no != null">
+                AND o.no like concat(#{no},'%')
+            </if>
+            <if test="stocker != null">
+                AND ui.name like concat('%',#{stocker},'%')
+            </if>
+            <if test="store != null">
+                AND s.name like concat('%',#{store},'%')
+            </if>
+            <if test="dept != null">
+                AND d.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                AND o.state = #{state}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectLogListByIds" resultType="com.mason.domain.dto.InvLogDTO">
+        SELECT sml.repertory_id,sml.source_type, sml.source_id,sm.store_id, sm.material_id, sml.num
+        FROM store_material_log sml
+        JOIN store_material sm ON sml.repertory_id = sm.id
+        <where>
+            <if test="sourceType != null">
+                AND sml.source_type = #{sourceType}
+            </if>
+            <if test="sourceIds != null">
+                AND sml.source_id IN
+                <foreach item="sourceId" collection="sourceIds" separator="," open="(" close=")" index="">
+                    #{sourceId}
+                </foreach>
+            </if>
+            <if test="operation != null">
+                AND sml.operation = #{operation}
+            </if>
+            <if test="startDate != null">
+                AND sml.create_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND sml.create_time &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+    <select id="countStoreAmendList" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM store_amend sa
+        join store s on sa.store_id = s.id
+        join dept d on s.dept_id = d.id
+        <where>
+            <if test="validStoreIds != null">
+                store_id IN
+                <foreach item="storeId" collection="validStoreIds" separator="," open="(" close=")" index="">
+                    #{storeId}
+                </foreach>
+            </if>
+            <if test="state != null">
+                AND sa.state = #{state}
+            </if>
+            <if test="dept != null and dept!=''">
+                AND d.name like concat('%',#{dept},'%')
+            </if>
+        </where>
+    </select>
+    <select id="selectStoreAmendList" resultType="com.mason.domain.vo.InvAmendSimpleVO">
+        SELECT sa.id,d.name as deptName,ui.name as repertory ,sa.state,sa.create_time FROM store_amend sa
+        join store s on sa.store_id = s.id
+        join dept d on s.dept_id = d.id
+        join user_info ui on sa.applicant_id = ui.user_id
+        <where>
+            <if test="validStoreIds != null">
+                store_id IN
+                <foreach item="storeId" collection="validStoreIds" separator="," open="(" close=")" index="">
+                    #{storeId}
+                </foreach>
+            </if>
+            <if test="state != null">
+                AND sa.state = #{state}
+            </if>
+            <if test="dept != null and dept!=''">
+                AND d.name like concat('%',#{dept},'%')
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectStoreByIds" resultType="com.mason.domain.vo.InventoryStoreSimplerVO">
+        SELECT id,name FROM store
+        WHERE id IN
+        <foreach item="storeId" collection="storeIds" separator="," open="(" close=")" index="">
+            #{storeId}
+        </foreach>
+    </select>
+</mapper>

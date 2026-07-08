@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.OrderMapper">
+
+    <insert id="batchInsertOrderDetail" useGeneratedKeys="true" keyProperty="id" >
+        insert into order_detail(order_id, goods_id, goods_type, num, couponId, pay_money)
+        values
+        <foreach collection="orderDetails" item="orderDetail" separator=",">
+            (#{orderDetail.orderId},#{orderDetail.goodsId},#{orderDetail.goodsType},#{orderDetail.num},#{orderDetail.couponId},#{orderDetail.finishPrice})
+        </foreach>
+    </insert>
+    <insert id="batchInsertODConfig">
+        insert into order_detail_config(detail_id, dish_id, value_id)
+        values
+        <foreach collection="orderExDetailConfigList" item="config" separator=",">
+            (#{config.detailId},#{config.dishId},#{config.valueId})
+        </foreach>
+    </insert>
+    <insert id="batchInsertOCDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into order_combo_detail(order_detail_id, dish_id, num)
+        values
+        <foreach collection="comboDetailList" item="comboDetail" separator=",">
+            (#{comboDetail.detailId},#{comboDetail.dishId},#{comboDetail.num})
+        </foreach>
+    </insert>
+    <insert id="batchInsertOCDConfig">
+        insert into order_combo_dish_config(order_combo_detail_id, dish_id, value_id)
+        values
+        <foreach collection="orderExCDConfigList" item="config" separator=",">
+            (#{config.orderComboDetailId},#{config.dishId},#{config.valueId})
+        </foreach>
+    </insert>
+    <insert id="batchInsertOCoupon">
+        insert into order_coupon(coupon_id,order_id)
+        values
+        <foreach collection="couponIds" item="couponId" separator=",">
+            (#{couponId},#{id})
+        </foreach>
+    </insert>
+    <update id="batchCancelOrder">
+        update `order` set state = 1,pickup_num = null,expiration_time = null where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")" >
+            #{id}
+        </foreach>
+    </update>
+    <select id="selectODConfigByDIds" resultType="com.mason.domain.dto.OrderTDConfigDTO">
+        select odc.detail_id, odc.value_id, cv.name
+        from order_detail_config odc
+        join config_value cv on odc.value_id = cv.id
+        where odc.detail_id in
+        <foreach item="detailId" collection="detailIds" separator="," close=")" open="(">
+            #{detailId}
+        </foreach>
+    </select>
+    <select id="selectOCDetailByDIds" resultType="com.mason.domain.dto.OrderTCDetailDTO">
+        select ocd.id, ocd.order_detail_id as detailId,ocd.dish_id , d.name as dishName, ocd.num,ocd.num
+        from order_combo_detail ocd
+        join dish d on ocd.dish_id = d.id
+        where ocd.order_detail_id in
+        <foreach item="detailId" collection="comboDetailIds" separator="," close=")" open="(">
+            #{detailId}
+        </foreach>
+    </select>
+    <select id="selectOCDConfigByDIds" resultType="com.mason.domain.dto.OrderTCDConfigDTO">
+        select ocdc.order_combo_detail_id as comboDetailId, ocdc.value_id, cv.name
+        from order_combo_dish_config ocdc
+        join config_value cv on ocdc.value_id = cv.id
+        where ocdc.order_combo_detail_id in
+        <foreach item="detailId" collection="comboInnDetailIds" open="(" separator="," close=")" >
+            #{detailId}
+        </foreach>
+    </select>
+    <select id="countOrderList" resultType="java.lang.Integer">
+        select count(*)
+        from `order`
+        join dept on `order`.dept_id = dept.id
+        <where>
+            <if test="no != null and no != ''">
+                and `order`.no like concat(#{no},'%')
+            </if>
+            <if test="type != null">
+                and `order`.type = #{type}
+            </if>
+            <if test="dept != null and dept != ''" >
+                and dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                and `order`.state = #{state}
+            </if>
+            <if test="eatMode != null">
+                and `order`.eat_mode = #{eatMode}
+            </if>
+            <if test="validDeptIds != null">
+                and `order`.dept_id in
+                <foreach item="deptId" collection="validDeptIds" separator="," close=")" open="(">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectOrderList" resultType="com.mason.domain.vo.OrderSimpleVO">
+        select `order`.id, `order`.type, `order`.state, `order`.eat_mode, `order`.dept_id, dept.name as deptName,
+               `order`.pay_money as finish_price,`order`.expiration_time, `order`.create_time
+        from `order`
+        join dept on `order`.dept_id = dept.id
+        <where>
+            <if test="no != null and no != ''">
+                and `order`.no like concat(#{no},'%')
+            </if>
+            <if test="type != null">
+                and `order`.type = #{type}
+            </if>
+            <if test="dept != null and dept != ''">
+                and dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                and `order`.state = #{state}
+            </if>
+            <if test="eatMode != null">
+                and `order`.eat_mode = #{eatMode}
+            </if>
+            <if test="validDeptIds != null">
+                and `order`.dept_id in
+                <foreach item="deptId" collection="validDeptIds" separator="," close=")" open="(">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="batchSelectOrderDetailByOId" resultType="com.mason.domain.dto.OrderTDetailDTO">
+        select od.id as detailId, od.order_id, od.goods_type,od.goods_id,od.num,od.couponId,od.pay_money,
+               case od.goods_type
+                   when 0 then d.name
+                   when 1 then c.name
+                   end as goodsName,
+               case od.goods_type
+                   when 0 then d.cover
+                   when 1 then c.cover
+                   end as cover
+        from order_detail od
+                 left join dish d on od.goods_type = 0 and od.goods_id = d.id
+                 left join combo c on od.goods_type = 1 and od.goods_id = c.id
+        where od.order_id in
+        <foreach item="orderId" collection="orderIds" separator="," close=")" open="(">
+            #{orderId}
+        </foreach>
+    </select>
+    <select id="countClientOrderList" resultType="java.lang.Integer">
+        select count(*)
+        from `order`
+        left join dept on `order`.dept_id = dept.id
+        <where>
+            `order`.client_id = #{loginUserId} and `order`.client_type = 1
+            <if test="no != null and no != ''">
+                and `order`.no like concat(#{no},'%')
+            </if>
+            <if test="type != null">
+                and `order`.type = #{type}
+            </if>
+            <if test="dept != null and dept != ''" >
+                and dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                and `order`.state = #{state}
+            </if>
+            <if test="eatMode != null">
+                and `order`.eat_mode = #{eatMode}
+            </if>
+        </where>
+    </select>
+    <select id="selectClientOrderList" resultType="com.mason.domain.vo.OrderSimpleVO">
+        select `order`.id, `order`.type, `order`.state, `order`.eat_mode, `order`.dept_id, dept.name as deptName,
+        `order`.pay_money as finish_price,`order`.expiration_time, `order`.create_time
+        from `order`
+        left join dept on `order`.dept_id = dept.id
+        <where>
+            `order`.client_id = #{loginUserId} and `order`.client_type = 1
+            <if test="no != null and no != ''">
+                and `order`.no like concat(#{no},'%')
+            </if>
+            <if test="type != null">
+                and `order`.type = #{type}
+            </if>
+            <if test="dept != null and dept != ''">
+                and dept.name like concat('%',#{dept},'%')
+            </if>
+            <if test="state != null">
+                and `order`.state = #{state}
+            </if>
+            <if test="eatMode != null">
+                and `order`.eat_mode = #{eatMode}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectOrderBaseDetailByOIds" resultType="com.mason.domain.po.OrderDetail">
+        select od.id, od.goods_type,od.goods_id,od.num,od.couponId,od.pay_money
+        from order_detail od
+        where od.order_id in
+        <foreach item="orderId" collection="ids" separator="," close=")" open="(">
+            #{orderId}
+        </foreach>
+    </select>
+    <select id="batchSelectOrderCouponByOIds" resultType="com.mason.domain.dto.OrderCouRollbackDTO">
+        select o.client_id,oc.coupon_id,count(*) as num
+        from `order` o join order_coupon oc on o.id = oc.order_id
+        where oc.order_id in
+        <foreach item="orderId" collection="orderIds" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        group by o.client_id,oc.coupon_id;
+    </select>
+</mapper>

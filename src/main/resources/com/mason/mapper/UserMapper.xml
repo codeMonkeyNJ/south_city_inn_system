@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.UserMapper">
+    <insert id="addUser" useGeneratedKeys="true" keyProperty="id">
+        insert into user(username,password
+        <if test="nickname != null and nickname != ''">
+            ,nickname
+        </if>
+        <if test="avatar != null">
+            ,avatar
+        </if>
+        <if test="state != null">
+            ,state
+        </if>
+        )
+        values(#{username},#{password}
+        <if test="nickname != null and nickname != ''">
+            ,#{nickname}
+        </if>
+        <if test="avatar != null">
+            ,#{avatar}
+        </if>
+        <if test="state != null">
+            ,#{state}
+        </if>
+        )
+    </insert>
+    <insert id="addUserInfo">
+        insert into user_info(user_id,phone
+        <if test="name != null">
+            ,name
+        </if>
+        <if test="gender != null">
+            ,gender
+        </if>
+        <if test="birthday != null">
+            ,birthday
+        </if>
+        <if test="idCard != null">
+            ,id_card
+        </if>
+        <if test="address != null">
+            ,address
+        </if>
+        <if test="bankName != null">
+            ,bank_name
+        </if>
+        <if test="bankCard != null">
+            ,bank_card
+        </if>
+        <if test="salary != null">
+            ,salary
+        </if>
+        <if test="remark != null">
+            ,remark
+        </if>
+        )
+        values(#{userId},#{phone}
+        <if test="name != null">
+            ,#{name}
+        </if>
+        <if test="gender != null">
+            ,#{gender}
+        </if>
+        <if test="birthday != null">
+            ,#{birthday}
+        </if>
+        <if test="idCard != null">
+            ,#{idCard}
+        </if>
+        <if test="address != null">
+            ,#{address}
+        </if>
+        <if test="bankName != null">
+            ,#{bankName}
+        </if>
+        <if test="bankCard != null">
+            ,#{bankCard}
+        </if>
+        <if test="salary != null">
+            ,#{salary}
+        </if>
+        <if test="remark != null">
+            ,#{remark}
+        </if>
+        )
+    </insert>
+    <insert id="addUserRole">
+        insert into user_role(user_id, role_id) values
+        <foreach item="roleId" collection="roleIds" separator=",">
+            (#{userId},#{roleId})
+        </foreach>
+    </insert>
+    <insert id="addUserDept">
+        insert into user_dept(user_id, dept_id) values
+        <foreach item="deptId" collection="deptIds" separator=",">
+            (#{userId},#{deptId})
+        </foreach>
+    </insert>
+    <update id="updateUser">
+        update user
+        <set>
+            <if test="nickname != null">
+                nickname = #{nickname},
+            </if>
+            <if test="username != null">
+                username = #{username},
+            </if>
+            <if test="avatar != null">
+                avatar = #{avatar},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateUserInfo">
+        update user_info
+        <set>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="gender != null">
+                gender = #{gender},
+            </if>
+            <if test="birthday != null">
+                birthday = #{birthday},
+            </if>
+            <if test="idCard != null">
+                id_card = #{idCard},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="bankName != null">
+                bank_name = #{bankName},
+            </if>
+            <if test="bankCard != null">
+                bank_card = #{bankCard},
+            </if>
+            <if test="salary != null">
+                salary = #{salary},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+        </set>
+        where user_id = #{userId}
+    </update>
+
+    <select id="countUser" resultType="integer">
+        select count(*) from user u
+        <if test="(validDepts != null and !validDepts.isEmpty()) or (deptName != null and deptName!='')">
+            left join user_dept ud on u.id = ud.user_id
+            left join dept d on ud.dept_id = d.id
+        </if>
+        <if test="roleName != null and roleName!=''">
+            left join user_role ur on u.id = ur.user_id
+            left join role r on ur.role_id = r.id
+        </if>
+        <where>
+            <if test="username != null and username != ''">
+                and u.username like concat('%', #{username}, '%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                and u.nickname like concat('%', #{nickname}, '%')
+            </if>
+            <if test="state != null">
+                and u.state = #{state}
+            </if>
+            <if test="deptName != null and deptName!=''">
+                and d.name like concat('%', #{deptName}, '%')
+            </if>
+            <if test="roleName != null and roleName!=''">
+                and r.name like concat('%', #{roleName}, '%')
+            </if>
+            <if test="startTime != null">
+                and u.create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                and u.create_time &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+    <select id="getAllUser" resultType="com.mason.domain.vo.UserSimpleVO">
+        SELECT
+        u.id,
+        u.nickname,
+        u.username,
+        u.avatar,
+        u.state,
+        IFNULL((
+            SELECT GROUP_CONCAT(DISTINCT r.name SEPARATOR ',')
+            FROM user_role ur
+            JOIN role r ON ur.role_id = r.id
+            WHERE ur.user_id = u.id
+        ), '') AS role,
+        IFNULL((
+            SELECT GROUP_CONCAT(DISTINCT d.name SEPARATOR ',')
+            FROM user_dept ud
+            JOIN dept d ON ud.dept_id = d.id
+            WHERE ud.user_id = u.id
+        ), '') AS dept,
+        u.update_time,
+        u.create_time
+        FROM `user` u
+        <where>
+            <if test="userId != null">
+                AND u.id = #{userId}
+            </if>
+            <if test="username != null and username != ''">
+                AND u.username LIKE concat('%', #{username}, '%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname LIKE concat('%', #{nickname}, '%')
+            </if>
+            <if test="state != null">
+                AND u.state = #{state}
+            </if>
+            <if test="roleName != null and roleName != ''">
+                AND EXISTS (
+                SELECT 1
+                FROM user_role ur2
+                JOIN role r2 ON ur2.role_id = r2.id
+                WHERE ur2.user_id = u.id
+                AND r2.name LIKE concat('%', #{roleName}, '%')
+                )
+            </if>
+            <if test="deptName != null and deptName != ''">
+                AND EXISTS (
+                SELECT 1
+                FROM user_dept ud2
+                JOIN dept d2 ON ud2.dept_id = d2.id
+                WHERE ud2.user_id = u.id
+                AND d2.name LIKE concat('%', #{deptName}, '%')
+                )
+            </if>
+            <if test="startTime != null">
+                AND u.create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND u.create_time &lt;= #{endTime}
+            </if>
+        </where>
+        ORDER BY u.id DESC
+        LIMIT #{skip}, #{pageSize}
+    </select>
+
+</mapper>

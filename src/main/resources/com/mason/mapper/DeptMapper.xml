@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.DeptMapper">
+    <select id="countDept" resultType="java.lang.Integer">
+        select count(*) from dept
+        <where>
+            <if test="name != null">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="type != null">
+                and type = #{type}
+            </if>
+            <if test="ids != null and !ids.isEmpty()">
+                and id in
+                <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="getAllDept" resultType="com.mason.domain.vo.DeptSimpleVO">
+        select id,name,type,father_id,state,detail from dept
+        <where>
+            <if test="name != null">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="type != null">
+                and type = #{type}
+            </if>
+            <if test="ids != null and !ids.isEmpty()">
+                and id in
+                <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+        order by sort desc
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="getDeptById" resultType="com.mason.domain.vo.DeptVO">
+        select a.id,a.name,a.type,a.father_id ,b.name father,a.sort,a.state,a.address,a.detail
+        from dept a left join dept b on a.father_id = b.id
+        <if test="id != null">
+            where a.id = #{id}
+        </if>
+    </select>
+    <insert id="addDept">
+        insert into dept(name,type,father_id,state,sort
+                         <if test="address != null and address != ''">
+                             ,address
+                         </if>
+                          <if test="detail != null and detail != ''">
+                              ,detail
+                          </if>
+                        )
+            values(#{name},#{type},#{fatherId},#{state},#{sort}
+                   <if test="address != null and address != ''">
+                       ,#{address}
+                   </if>
+                    <if test="detail != null and detail != ''">
+                        ,#{detail}
+                    </if>
+        )
+    </insert>
+    <update id="updateDept">
+        update dept
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            <if test="fatherId != null">
+                father_id = #{fatherId},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+            <if test="sort != null">
+                sort = #{sort},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="detail != null">
+                detail = #{detail}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="batchUpdateDeptFather">
+        update dept set father_id = null
+        where father_id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    <delete id="batchDeleteDept">
+        delete from dept where id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

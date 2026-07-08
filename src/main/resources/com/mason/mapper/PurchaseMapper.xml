@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.PurchaseMapper">
+    <insert id="insertPurchaseApply" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase_apply(
+             no, applicant_id, dept_id, store_id
+            <if test="remark != null">
+                ,remark
+            </if>
+        )
+        values(
+            #{no}, #{applicantId}, #{deptId}, #{storeId}
+            <if test="remark != null">
+                ,#{remark}
+            </if>
+        )
+    </insert>
+    <insert id="insertPurchaseDetail">
+        insert into purchase_detail
+        <foreach collection="fields" item="field" open="(" separator="," close=")">
+            ${field}
+        </foreach>
+        values
+        <foreach collection="details" item="detail" separator="," >
+            (
+            <foreach collection="fields" item="field" separator=",">
+                <if test="field == 'source_type'">
+                    #{detail.sourceType}
+                </if>
+                <if test="field == 'source_id'">
+                    #{detail.sourceId}
+                </if>
+                <if test="field == 'material_id'">
+                    #{detail.materialId}
+                </if>
+                <if test="field == 'supplier_id'">
+                    #{detail.supplierId}
+                </if>
+                <if test="field == 'plan_num'">
+                    #{detail.planNum}
+                </if>
+                <if test="field == 'real_num'">
+                    #{detail.realNum}
+                </if>
+                <if test="field == 'money'">
+                    #{detail.money}
+                </if>
+                <if test="field == 'remark'">
+                    #{detail.remark}
+                </if>
+            </foreach>
+            )
+        </foreach>
+    </insert>
+    <insert id="insertSupplier" useGeneratedKeys="true"  keyProperty="id">
+        insert into supplier(
+            name, address, phone, link_name
+            <if test = "accountName != null">
+                ,account_name
+            </if>
+            <if test = "bank != null">
+                ,bank
+            </if>
+            <if test = "account != null">
+                ,account
+            </if>
+        )
+        values(
+            #{name}, #{address}, #{phone}, #{linkName}
+            <if test = "accountName != null">
+                ,#{accountName}
+            </if>
+            <if test = "bank != null">
+                ,#{bank}
+            </if>
+            <if test = "account != null">
+                ,#{account}
+            </if>
+        )
+    </insert>
+    <insert id="insertSupplierMaterial">
+        insert into supplier_material(supplier_id, material_id)
+        values
+        <foreach item="materialId" index="index" collection="materials" separator=",">
+            (#{supplierId}, #{materialId})
+        </foreach>
+    </insert>
+    <insert id="insertPurchaseOrder" useGeneratedKeys="true" keyProperty="id">
+        insert into purchase(
+            no,dept_id,buyer_id
+            <if test="applyId != null">
+                ,apply_id
+            </if>
+            <if test="stockerId != null">
+                ,stocker_id
+            </if>
+            <if test="storeId != null">
+                ,store_id
+            </if>
+            <if test="state != null">
+                ,state
+            </if>
+            <if test="money != null">
+                ,money
+            </if>
+            <if test="remark != null">
+                ,remark
+            </if>
+        )
+        values(
+            #{no},#{deptId},#{buyerId}
+            <if test="applyId != null">
+                ,#{applyId}
+            </if>
+            <if test="stockerId != null">
+                 ,#{stockerId}
+            </if>
+            <if test="storeId != null">
+                ,#{storeId}
+            </if>
+            <if test="state != null">
+                ,#{state}
+            </if>
+            <if test="money != null">
+                ,#{money}
+            </if>
+            <if test="remark != null">
+                ,#{remark}
+            </if>
+        )
+    </insert>
+    <update id="updatePurchaseApply">
+        update purchase_apply
+        <set>
+            <if test="deptId != null">
+                dept_id = #{deptId},
+            </if>
+            <if test="storeId != null">
+                store_id = #{storeId},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+            <if test="cause != null">
+                cause = #{cause},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateSupplier">
+        update supplier
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="linkName != null">
+                link_name = #{linkName},
+            </if>
+            <if test="accountName != null">
+                account_name = #{accountName},
+            </if>
+            <if test="bank != null">
+                bank = #{bank},
+            </if>
+            <if test="account != null">
+                account = #{account},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updatePurchaseDetail">
+        update purchase_detail
+        <set>
+            <if test="fields.contains('source_type')">
+                source_type = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.sourceType}
+                </foreach>
+                else source_type end,
+            </if>
+            <if test="fields.contains('source_id')">
+                source_id = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.sourceId}
+                </foreach>
+                else source_id end,
+            </if>
+            <if test="fields.contains('supplier_id')">
+                supplier_id = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.supplierId}
+                </foreach>
+                else supplier_id end,
+            </if>
+            <if test="fields.contains('real_num')">
+                real_num = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.realNum}
+                </foreach>
+                else real_num end,
+            </if>
+            <if test="fields.contains('money')">
+                money = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.money}
+                </foreach>
+                else money end,
+            </if>
+            <if test="fields.contains('remark')">
+                remark = case material_id
+                <foreach collection="details" item="detail">
+                    when #{detail.materialId} then #{detail.remark}
+                </foreach>
+                else remark end,
+            </if>
+        </set>
+        where source_type = #{sourceType} and source_id = #{sourceId}
+    </update>
+    <update id="updatePurchaseOrder">
+        update purchase
+        <set>
+            <if test="applyId != null">
+                apply_id = #{applyId},
+            </if>
+            <if test="deptId != null">
+                dept_id = #{deptId},
+            </if>
+            <if test="buyerId != null">
+                buyer_id = #{buyerId},
+            </if>
+            <if test="stockerId != null">
+                stocker_id = #{stockerId},
+            </if>
+            <if test="storeId != null">
+                store_id = #{storeId},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+            <if test="money != null">
+                money = #{money},
+            </if>
+            <if test="money == null">
+                money = 0.00,
+            </if>
+            remark = #{remark}
+        </set>
+        where id = #{id}
+    </update>
+    <select id="countPAList" resultType="java.lang.Integer">
+        select count(*) from purchase_apply
+        <where>
+            <if test="no != null and !no.isEmpty()">
+                and no like concat(#{no},'%')
+            </if>
+            <if test="dept != null and !dept.isEmpty()">
+                and dept_id in (select id from dept where name like concat('%',#{dept},'%'))
+            </if>
+            <if test="applicant != null and !applicant.isEmpty()">
+                and applicant_id in (select user_id from user_info where name like concat('%',#{applicant},'%'))
+            </if>
+            <if test="state != null">
+                and state = #{state}
+            </if>
+            <if test="stateTime != null">
+                and create_time &gt;= #{stateTime}
+            </if>
+            <if test="endTime != null">
+                and create_time &lt;= #{endTime}
+            </if>
+            <if test="validDeptIds != null">
+                and dept_id in
+                <foreach item="item" index="index" collection="validDeptIds" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectPAList" resultType="com.mason.domain.vo.PurchaseApplySimpleVO">
+        select pa.id,
+               pa.no,
+               d.name as dept,
+               ui.name as applicant,
+               pa.state,
+               p.apply_id as purchaseId,
+               pa.create_time as applyTime
+        from purchase_apply pa
+        left join purchase p on pa.id = p.apply_id
+        join dept d on pa.dept_id = d.id
+        join user_info ui on pa.applicant_id = ui.user_id
+        <where>
+            <if test="no != null and !no.isEmpty()">
+                and pa.no like concat(#{no},'%')
+            </if>
+            <if test="dept != null and !dept.isEmpty()">
+                and d.name like concat('%',#{dept},'%')
+            </if>
+            <if test="applicant != null and !applicant.isEmpty()">
+                and ui.name like concat('%',#{applicant},'%')
+            </if>
+            <if test="state != null">
+                and pa.state = #{state}
+            </if>
+            <if test="stateTime != null">
+                and pa.create_time &gt;= #{stateTime}
+            </if>
+            <if test="endTime != null">
+                and pa.create_time &lt;= #{endTime}
+            </if>
+            <if test="validDeptIds != null">
+                and pa.dept_id in
+                <foreach item="item" index="index" collection="validDeptIds" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="countSupplier" resultType="java.lang.Integer">
+        select count(*) from supplier
+        <where>
+            <if test="name != null and !name.isEmpty()">
+                name like concat('%',#{name},'%')
+            </if>
+        </where>
+    </select>
+    <select id="selectSupplierList" resultType="com.mason.domain.vo.PurchaseSupplierSimpleVO">
+        select id,name,address,phone
+        from supplier
+        <where>
+            <if test="name != null and !name.isEmpty()">
+                name like concat('%',#{name},'%')
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="CountPOList" resultType="java.lang.Integer">
+        select count(*) from purchase
+        <where>
+            <if test="dept != null">
+                and dept_id in (select id from dept where name like concat('%',#{dept},'%'))
+            </if>
+            <if test="buyer != null and !buyer.isEmpty()">
+                and buyer_id in (select user_id from user_info where name like concat('%',#{buyer},'%'))
+            </if>
+            <if test="stocker != null and !stocker.isEmpty()">
+                and stocker_id in (select user_id from user_info where name like concat('%',#{stocker},'%'))
+            </if>
+            <if test="store != null and !store.isEmpty()">
+                and store_id in (select id from store where name like concat('%',#{store},'%'))
+            </if>
+            <if test="no != null and !no.isEmpty()">
+                and no like concat(#{no},'%')
+            </if>
+            <if test="state != null">
+                and state = #{state}
+            </if>
+            <if test="validDeptIds != null">
+                and dept_id in
+                <foreach item="deptId" index="index" collection="validDeptIds" open="(" separator="," close=")">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectFullPOList" resultType="com.mason.domain.vo.PurchaseOrderSimpleVO">
+        select
+            p.id,
+            p.no,
+            d.name as dept,
+            u1.name as buyer,
+            u2.name as stocker,
+            s.name as store,
+            p.state
+        from purchase p
+        join dept d on p.dept_id = d.id
+        left join user_info u1 on p.buyer_id = u1.user_id
+        left join user_info u2 on p.stocker_id = u2.user_id
+        left join store s on p.store_id = s.id
+        <where>
+            <if test="dept != null">
+                and d.name like concat('%',#{dept},'%')
+            </if>
+            <if test="buyer != null and !buyer.isEmpty()">
+                and u1.name like concat('%',#{buyer},'%')
+            </if>
+            <if test="stocker != null and !stocker.isEmpty()">
+                and u2.name like concat('%',#{stocker},'%')
+            </if>
+            <if test="store != null and !store.isEmpty()">
+                and s.name like concat('%',#{store},'%')
+            </if>
+            <if test="no != null and !no.isEmpty()">
+                and p.no like concat(#{no},'%')
+            </if>
+            <if test="state != null">
+                and p.state = #{state}
+            </if>
+            <if test="validDeptIds != null">
+                and p.dept_id in
+                <foreach item="deptId" index="index" collection="validDeptIds" open="(" separator="," close=")">
+                    #{deptId}
+                </foreach>
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <delete id="deleteSupplierMaterial">
+        delete from supplier_material
+        where supplier_id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <delete id="deleteSupplier">
+        delete from supplier
+        where id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

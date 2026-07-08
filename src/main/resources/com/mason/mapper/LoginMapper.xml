@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.LoginMapper">
+
+    <insert id="insertClient">
+        insert into client(username
+            <if test="password != null">,password</if>
+            <if test="phone != null">,phone</if>
+        ) values (#{username}
+            <if test="password != null">,#{password}</if>
+            <if test="phone != null">,#{phone}</if>
+        )
+    </insert>
+</mapper>

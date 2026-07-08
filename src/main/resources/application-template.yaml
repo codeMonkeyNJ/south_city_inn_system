@@ -1,0 +1,20 @@
+masun:
+  security:
+    user:
+      name: 你的用户名
+      password: 你的密码
+  rabbitmq:
+    host: 你的rabbitmq主机地址
+    virtual-host: 你的rabbitmq虚拟主机
+    username: 你的rabbitmq用户名
+    password: 你的rabbitmq密码
+  db:
+    host: 你的数据库主机地址
+    password: 你的数据库密码
+  redis:
+    host: 你的redis主机地址
+    password: 你的redis密码
+  aliyun:
+    sms:
+      access-key-id: 你的access-key-id
+      access-key-secret: 你的access-key-secret

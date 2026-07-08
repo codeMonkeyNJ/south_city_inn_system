@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.MarketingMapper">
+
+    <insert id="insertCoupon" useGeneratedKeys="true" keyProperty="id">
+        insert into coupon(
+            name,cover,type,enable_time,disable_time,state
+            <if test="rule != null">
+                ,rule
+            </if>
+            <if test="discount != null">
+                ,discount
+            </if>
+            <if test="derate != null">
+                ,derate
+            </if>
+            <if test="threshold != null">
+                ,threshold
+            </if>
+            ,overlay,sum,stock,`limit`
+            <if test="price != null">
+                ,price
+            </if>
+            ,all_depts,all_dishes,all_combos
+        )
+        values(
+            #{name},#{cover},#{type},#{enableTime},#{disableTime},#{state}
+            <if test="rule != null">
+                ,#{rule}
+            </if>
+            <if test="discount != null">
+                ,#{discount}
+            </if>
+            <if test="derate != null">
+                ,#{derate}
+            </if>
+            <if test="threshold != null">
+                ,#{threshold}
+            </if>
+            ,#{overlay},#{sum},#{stock},#{limit}
+            <if test="price != null">
+                ,#{price}
+            </if>
+            ,#{allDepts},#{allDishes},#{allCombos}
+        )
+    </insert>
+    <insert id="insertCouponCombo">
+        insert into coupon_combo(coupon_id,combo_id)
+        values
+            <foreach item="item" index="index" collection="combos" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertCouponDish">
+        insert into coupon_dish(coupon_id,dish_id)
+        values
+            <foreach item="item" index="index" collection="dishes" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertCouponDept">
+        insert into coupon_dept(coupon_id,dept_id)
+        values
+            <foreach item="item" index="index" collection="depts" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertActivityRule" useGeneratedKeys="true" keyProperty="id">
+        insert into activity_rule(all_depts, all_dishes, all_combos, vip, overlay,once, type
+            <if test="startTime != null">
+                ,start_time
+            </if>
+            <if test="endTime != null">
+                ,end_time
+            </if>
+            <if test="buyNum != null">
+                ,buy_num
+            </if>
+            <if test="giveNum != null">
+                ,give_num
+            </if>
+            <if test="discount != null">
+                ,discount
+            </if>
+            <if test="goodsType != null">
+                ,goods_type
+            </if>
+            <if test="goodsId != null">
+                ,goods_id
+            </if>
+        )
+        values(#{allDepts}, #{allDishes}, #{allCombos}, #{vip}, #{overlay},#{once}, #{type}
+            <if test="startTime != null">
+                ,#{startTime}
+            </if>
+            <if test="endTime != null">
+                ,#{endTime}
+            </if>
+            <if test="buyNum != null">
+                ,#{buyNum}
+            </if>
+            <if test="giveNum != null">
+                ,#{giveNum}
+            </if>
+            <if test="discount != null">
+                ,#{discount}
+            </if>
+            <if test="goodsType != null">
+                ,#{goodsType}
+            </if>
+            <if test="goodsId != null">
+                ,#{goodsId}
+            </if>
+        )
+    </insert>
+    <insert id="insertActivity">
+        insert into activity(
+            name,rule_id,cover,type,start_date,end_date
+            <if test="detailsImage != null">
+                ,details_image
+            </if>
+            <if test="goodsId != null">
+                ,goods_id
+            </if>
+        ) values(
+            #{name},#{ruleId},#{cover},#{type},#{startDate},#{endDate}
+            <if test="detailsImage != null">
+                ,#{detailsImage}
+            </if>
+            <if test="goodsId != null">
+                ,#{goodsId}
+            </if>
+        )
+    </insert>
+    <insert id="insertActivityDept">
+        insert into activity_rule_dept(rule_id,dept_id)
+        values
+            <foreach item="item" index="index" collection="depts" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertActivityCombo">
+        insert into activity_rule_combo(rule_id,combo_id)
+        values
+            <foreach item="item" index="index" collection="combos" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertActivityDish">
+        insert into activity_rule_dish(rule_id,dish_id)
+        values
+            <foreach item="item" index="index" collection="dishes" separator=",">
+                (#{id},#{item})
+            </foreach>
+    </insert>
+    <insert id="insertCouponToClient">
+        insert into client_coupon(coupon_id,client_id) values
+        <foreach item="item" index="index" collection="num" separator=",">
+            (#{couponId},#{loginUserId})
+        </foreach>
+    </insert>
+    <insert id="batchInsertCouponToClient">
+        INSERT INTO client_coupon(client_id,coupon_id)
+        VALUES
+        <foreach collection="clientCoupons" item="item" separator=",">
+            (#{item.clientId},#{item.couponId})
+        </foreach>
+    </insert>
+    <update id="updateActivityRule">
+        update activity_rule set
+            all_depts = #{allDepts},
+            all_dishes = #{allDishes},
+            all_combos = #{allCombos},
+            vip = #{vip},
+            overlay = #{overlay},
+            once = #{once},
+            type = #{type},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            buy_num = #{buyNum},
+            give_num = #{giveNum},
+            discount = #{discount},
+            goods_type = #{goodsType},
+            goods_id = #{goodsId}
+        where id = #{id}
+    </update>
+    <update id="updateActivity">
+        update activity set
+            name = #{name},
+            rule_id = #{ruleId},
+            cover = #{cover},
+            type = #{type},
+            start_date = #{startDate},
+            end_date = #{endDate}
+            <if test="detailsImage != null">
+                ,details_image = #{detailsImage}
+            </if>
+            <if test="goodsId != null">
+                ,goods_id = #{goodsId}
+            </if>
+        where id = #{id}
+    </update>
+    <update id="updateCouponUseNum">
+        update coupon set `usage` = `usage` + case
+            <foreach collection="couponUseNumList" item="item">
+                when id = #{item.couponId} then #{item.useNum}
+            </foreach>
+            else 0
+        end
+        where id in
+            <foreach item="item" index="index" collection="couponUseNumList" open="(" separator="," close=")">
+                #{item.couponId}
+            </foreach>
+    </update>
+    <update id="updateCouponInvByCId">
+        update coupon set stock = stock + #{num}
+        where id = #{couponId}
+        <if test="num &lt; 0">
+            and stock >= -#{num}
+        </if>
+    </update>
+    <update id="batchAddCouponInv">
+        update coupon set stock = stock + case id
+            <foreach item="item" index="index" collection="couponNumList">
+                when #{item.couponId} then #{item.num}
+            </foreach>
+            else 0
+        end
+        where id in
+            <foreach item="item" index="index" collection="couponNumList" open="(" separator="," close=")">
+                #{item.couponId}
+            </foreach>
+    </update>
+    <delete id="batchDeleteCoupon">
+        delete from coupon where id in
+            <foreach item="item" index="index" collection="couponIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+    </delete>
+    <delete id="batchDeleteCouponDept">
+        delete from coupon_dept where coupon_id in
+        <foreach item="item" index="index" collection="couponIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+    <delete id="batchDeleteCouponDish">
+        delete from coupon_dish where coupon_id in
+        <foreach item="item" index="index" collection="couponIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+    <delete id="batchDeleteCouponCombo">
+        delete from coupon_combo where coupon_id in
+        <foreach item="item" index="index" collection="couponIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+    <select id="countCouponList" resultType="java.lang.Integer">
+        select count(*) from coupon
+        <where>
+            <if test="name != null">
+                and name like concat('%',#{name},'%')
+            </if>
+            <if test="type != null">
+                and type = #{type}
+            </if>
+            <if test="state != null">
+                and state = #{state}
+            </if>
+        </where>
+    </select>
+    <select id="selectCouponList" resultType="com.mason.domain.vo.MarketingCSimpleVO">
+        select id,name,cover,type,enable_time,disable_time,state,stock from coupon
+        <where>
+            <if test="name != null">
+                and name like concat('%',#{name},'%')
+            </if>
+            <if test="type != null">
+                and type = #{type}
+            </if>
+            <if test="state != null">
+                and state = #{state}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectCouponByCIds" resultType="com.mason.domain.po.Coupon">
+        select id, name, cover, rule, type, discount, derate, threshold, enable_time, disable_time, state, `limit`, overlay, sum, stock, `usage`, price, all_depts, all_dishes, all_combos from coupon where id in
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </select>
+    <select id="countActivityList" resultType="java.lang.Integer">
+        select count(*) from activity a join activity_rule ar on a.rule_id = ar.id
+        <where>
+            <if test="name != null">
+                and a.name like concat('%',#{name},'%')
+            </if>
+            <if test="vip != null">
+                and ar.vip = #{vip}
+            </if>
+            <if test="type != null">
+                and ar.type = #{type}
+            </if>
+        </where>
+    </select>
+    <select id="selectActivityList" resultType="com.mason.domain.vo.MarketingActSimpleVO">
+        select a.id,a.name,a.start_date,a.end_date,ar.type,ar.vip from activity a join activity_rule ar on a.rule_id = ar.id
+        <where>
+            <if test="name != null">
+                and a.name like concat('%',#{name},'%')
+            </if>
+            <if test="vip != null">
+                and ar.vip = #{vip}
+            </if>
+            <if test="type != null">
+                and ar.type = #{type}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+    <select id="selectCouponSimpleByCIds" resultType="com.mason.domain.dto.MarketingCSimDTO">
+        select id,name,cover from coupon where id in
+       <foreach collection="ids" item="id" open="(" separator="," close=")">
+           #{id}
+       </foreach>
+    </select>
+</mapper>

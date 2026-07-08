@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.MaterialMapper">
+    <insert id="insertMaterial">
+        insert into material(
+            <if test="cover != null">
+                cover,
+            </if>
+            name,
+            <if test="classId != null">
+                class_id,
+            </if>
+            num,unit,pack,price,state
+            <if test="remark != null">
+                ,remark
+            </if>
+        ) values(
+            <if test="cover != null">
+                #{cover},
+            </if>
+            #{name},
+            <if test="classId != null">
+                #{classId},
+            </if>
+            #{num},#{unit},#{pack},#{price},#{state}
+            <if test="remark != null">
+                ,#{remark}
+            </if>
+        )
+    </insert>
+    <update id="updateMaterial">
+        update material
+        <set>
+            <if test="cover != null">
+                cover = #{cover},
+            </if>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="classId != null">
+                class_id = #{classId},
+            </if>
+            <if test="num != null">
+                num = #{num},
+            </if>
+            <if test="unit != null">
+                unit = #{unit},
+            </if>
+            <if test="pack != null">
+                pack = #{pack},
+            </if>
+            <if test="price != null">
+                price = #{price},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateMaterialClassIds2Null">
+        update material set class_id = null where class_id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    <delete id="batchDeleteMaterialClass">
+        delete from material_class where id in
+        <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="countMaterial" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM material m
+        left join material_class mc on m.class_id = mc.id
+        <where>
+            <if test="name != null and name != ''">
+                and m.name like concat('%',#{name},'%')
+            </if>
+            <if test="className != null and className != ''">
+                and mc.name like concat('%',#{className},'%')
+            </if>
+            <if test="state != null">
+                and m.state = #{state}
+            </if>
+        </where>
+    </select>
+    <select id="selectMaterial" resultType="com.mason.domain.vo.MaterialListVO">
+        SELECT
+        m.id,
+        m.cover,
+        m.name,
+        mc.name as className,
+        m.num,
+        m.unit,
+        m.pack,
+        m.price,
+        m.state
+        FROM material m LEFT JOIN material_class mc ON m.class_id = mc.id
+        <where>
+            <if test="name != null and name != ''">
+                and m.name like concat('%',#{name},'%')
+            </if>
+            <if test="className != null  and className != ''">
+                and mc.name like concat('%',#{className},'%')
+            </if>
+            <if test="state != null">
+                and m.state = #{state}
+            </if>
+        </where>
+        LIMIT #{skip}, #{pageSize}
+    </select>
+    <select id="selectMaterialByMaterialIds" resultType="com.mason.domain.vo.MaterialVO">
+        select m.cover, m.name, m.class_id as classId, mc.name as className, num, unit, pack, price, state, remark
+        from material m left join material_class mc on m.class_id = mc.id
+        <where>
+            m.id in
+            <foreach item="id" index="index" collection="materialIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            <if test="name != null">
+                and m.name like concat('%',#{name},'%')
+            </if>
+            <if test="classId != null">
+                and m.class_id = #{classId}
+            </if>
+        </where>
+        <if test="page != null and pageSize != null">
+            LIMIT #{page}, #{pageSize}
+        </if>
+    </select>
+    <select id="selectMIdMNMMByMIds" resultType="com.mason.domain.po.Material">
+        select id, name,price
+        from material
+        where id in
+        <foreach item="id" index="index" collection="materialIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectMListByMIds" resultType="com.mason.domain.po.Material">
+        select
+        <foreach collection="fields" item="field" index="index" separator=",">
+            ${field}
+        </foreach>
+        from material
+        <where>
+            id in
+            <foreach item="id" index="index" collection="materialIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </where>
+    </select>
+</mapper>

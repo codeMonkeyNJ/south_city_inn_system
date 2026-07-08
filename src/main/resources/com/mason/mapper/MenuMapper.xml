@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.MenuMapper">
+
+    <insert id="insertMenuClass">
+        insert into menu_class(
+            name
+            <if test="sort != null">
+                ,sort
+            </if>
+            <if test="state != null">
+                ,state
+            </if>
+        ) values(
+            #{name}
+            <if test="sort != null">
+                ,#{sort}
+            </if>
+            <if test="state != null">
+                ,#{state}
+            </if>
+        )
+    </insert>
+    <insert id="batchInsertConfigValue">
+        insert into config_value(option_id, name, spread)
+        VALUES
+            <foreach item="item" index="index" collection="values" separator=",">
+                (#{item.optionId}, #{item.name}, COALESCE(#{item.spread}, 0))
+            </foreach>
+    </insert>
+    <insert id="batchInsertMDFormula">
+        insert into formula(dish_id,material_id,num,step,detail)
+        VALUES
+            <foreach item="item" index="index" collection="formulas" separator=",">
+                (#{item.dishId}, #{item.materialId},#{item.num},#{item.step},#{item.detail})
+            </foreach>
+    </insert>
+    <insert id="batchInsertMDConfig">
+        insert into dish_config(dish_id,option_id)
+        VALUES
+            <foreach item="item" index="index" collection="configs" separator=",">
+                (#{item.dishId}, #{item.optionId})
+            </foreach>
+    </insert>
+    <insert id="batchInsertMDCM">
+        insert into config_material(dish_id,option_id,value_id,material_id,spread)
+        VALUES
+            <foreach item="item" index="index" collection="configMaterials" separator=",">
+                (#{item.dishId},#{item.optionId},#{item.valueId},#{item.materialId},#{item.spread})
+            </foreach>
+    </insert>
+    <insert id="insertGoodsClass">
+        insert into goods_class(
+            goods_type,
+            <if test="goodsType == 0">
+                dish_id,
+            </if>
+            <if test="goodsType == 1">
+                combo_id,
+            </if>
+            menu_class_id
+        ) values
+        <foreach collection="goodsClassList" item="item" separator=",">
+            (
+                #{item.goodsType},
+                <if test="goodsType == 0">
+                    #{item.dishId},
+                </if>
+                <if test="goodsType == 1">
+                    #{item.comboId},
+                </if>
+                #{item.menuClassId}
+            )
+        </foreach>
+    </insert>
+    <insert id="batchInsertMGroupDetail">
+        insert into group_detail(group_id, dish_id, num, required)
+        values
+            <foreach item="item" index="index" collection="details" separator=",">
+                (#{item.groupId},#{item.dishId},#{item.num},#{item.required})
+            </foreach>
+    </insert>
+    <insert id="batchInsertComboGroup">
+        insert into combo_group(combo_id, group_id,num)
+        values
+            <foreach item="item" index="index" collection="groups" separator=",">
+                (#{item.comboId},#{item.groupId},#{item.num})
+            </foreach>
+    </insert>
+    <update id="updateMenuClass">
+        update menu_class
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="sort != null">
+                sort = #{sort},
+            </if>
+            <if test="state != null">
+                state = #{state},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateMenuConfig">
+        update config_option
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="sort != null">
+                sort = #{sort},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="batchUpdateConfigValue">
+        update config_value
+        <set>
+            option_id = case id
+            <foreach item="item" index="index" collection="values">
+                when #{item.id} then #{item.optionId}
+            </foreach>
+            end,
+            name = case id
+            <foreach item="item" index="index" collection="values">
+                when #{item.id} then #{item.name}
+            </foreach>
+            end,
+            spread = case id
+            <foreach item="item" index="index" collection="values">
+                when #{item.id} then COALESCE(#{item.spread}, 0)
+            </foreach>
+            end
+        </set>
+        where id in
+        <foreach item="item" index="index" collection="values" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+    <delete id="deleteGoodsClass">
+        delete from goods_class where goods_type = #{goodsType} and
+        <if test="goodsType == 0">
+            dish_id = #{id}
+        </if>
+        <if test="goodsType == 1">
+            combo_id = #{id}
+        </if>
+    </delete>
+    <select id="countMenuDishList" resultType="java.lang.Integer">
+        select count(*) from dish
+        <if test="dishName != null and dishName !=''">
+            where name like concat('%', #{dishName}, '%')
+        </if>
+        <if test="state != null">
+            and state = #{state}
+        </if>
+        <if test="className != null and className !=''">
+            and id in (select dish_id from goods_class where menu_class_id in (select id from menu_class where name like concat('%', #{className},'%')))
+        </if>
+    </select>
+    <select id="selectMenuDishList" resultType="com.mason.domain.vo.MenuDishSimpleVO">
+        select d.id,d.cover,d.name,d.price,d.state,ifnull(temp.className,'未分类') as className
+        from dish d left join (
+            select gc.dish_id,GROUP_CONCAT(mc.name SEPARATOR ',') as className
+            from goods_class gc join menu_class mc on gc.menu_class_id = mc.id
+            where gc.menu_class_id != 0
+            group by gc.dish_id
+        ) temp on d.id = temp.dish_id
+        <where>
+            <if test="dishName != null and dishName !=''">
+                d.name like concat('%', #{dishName}, '%')
+            </if>
+            <if test="state != null">
+                and d.state = #{state}
+            </if>
+            <if test="className != null and className !=''">
+                and temp.className like concat('%', #{className},'%')
+            </if>
+        </where>
+        limit #{skip}, #{pageSize}
+    </select>
+    <select id="countMenuComboList" resultType="java.lang.Integer">
+        select count(*) from combo
+        <if test="name != null and name !=''">
+            where name like concat('%', #{name}, '%')
+        </if>
+    </select>
+    <select id="selectMenuComboList" resultType="com.mason.domain.vo.MenuComboSimpleVO">
+        select c.id,c.name,c.cover,c.state,c.def_price,c.reduce_price,ifnull(temp.className,'未分类') as className
+        from combo c left join (
+        select gc.combo_id,GROUP_CONCAT(mc.name SEPARATOR ',') as className
+        from goods_class gc join menu_class mc on gc.menu_class_id = mc.id
+        where gc.menu_class_id != 0
+        group by gc.combo_id
+        ) temp on c.id = temp.combo_id
+        <where>
+            <if test="name != null and name !=''">
+                c.name like concat('%', #{name}, '%')
+            </if>
+        </where>
+        order by c.sort
+        limit #{skip}, #{pageSize}
+    </select>
+    <select id="selectMCGDByCId" resultType="com.mason.domain.dto.MenuComboIGDDTO">
+        select gd.group_id,gd.dish_id,gd.num,gd.required,d.name,d.price
+        from group_detail gd join dish d on gd.dish_id = d.id
+        where gd.group_id in
+        <foreach item="groupId" index="index" collection="groupIds" separator="," open="(" close=")">
+            #{groupId}
+        </foreach>
+        order by d.price
+    </select>
+    <select id="selectDishConfigsByDIds" resultType="com.mason.domain.dto.MenuComboIGDCDTO">
+        select dc.dish_id, dc.option_id,co.name
+        from dish_config dc join config_option co on dc.option_id = co.id
+        where dc.dish_id in
+        <foreach item="dishId" index="index" collection="dishIds" separator="," open="(" close=")">
+            #{dishId}
+        </foreach>
+    </select>
+    <select id="selectDishConfigValuesByOIds" resultType="com.mason.domain.dto.MenuComboIGDCVDTO">
+        select cm.dish_id,cm.option_id,cm.value_id,cv.name,cv.spread
+        from config_material cm join config_value cv on cm.value_id = cv.id
+        where cm.dish_id in
+        <foreach item="dishId" index="index" collection="dishIds" separator="," open="(" close=")">
+            #{dishId}
+        </foreach>
+        group by cm.value_id,cm.dish_id,cm.option_id,cv.name,cv.spread
+    </select>
+    <select id="selectValueByVIds" resultType="com.mason.domain.po.ConfigValue">
+        select cv.id,cv.spread,cv.name
+        from config_value cv
+        where cv.id in
+        <foreach item="valueId" index="index" collection="valueIds" separator="," open="(" close=")">
+            #{valueId}
+        </foreach>
+    </select>
+    <select id="selectDishByDIds" resultType="com.mason.domain.po.Dish">
+        select d.id,d.cover,d.price,d.name
+        from dish d
+        where d.id in
+        <foreach item="dishId" index="index" collection="dishIds" separator="," open="(" close=")">
+            #{dishId}
+        </foreach>
+    </select>
+    <select id="selectComboByCIds" resultType="com.mason.domain.po.Combo">
+        select c.id,c.reduce_price,c.name,c.cover
+        from combo c
+        where c.id in
+        <foreach item="comboId" index="index" collection="comboIds" separator="," open="(" close=")">
+            #{comboId}
+        </foreach>
+    </select>
+    <select id="selectFormulaByDIds" resultType="com.mason.domain.po.Formula">
+        select f.dish_id,f.material_id,f.num
+        from formula f
+        where f.dish_id in
+        <foreach item="dishId" index="index" collection="dishIds" separator="," open="(" close=")">
+            #{dishId}
+        </foreach>
+    </select>
+    <select id="selectMaterialDifference" resultType="com.mason.domain.po.ConfigMaterial">
+        select cm.dish_id,cm.value_id,cm.material_id,cm.spread
+        from config_material cm
+        where (cm.dish_id,cm.value_id) in
+        <foreach item="configMaterial" index="index" collection="configMaterials" separator="," open="(" close=")">
+            (#{configMaterial.dishId},#{configMaterial.valueId})
+        </foreach>
+    </select>
+    <select id="selectGroupIds" resultType="java.lang.Integer">
+        select cg.group_id
+        from combo_group cg
+        <if test="dishId != null">
+            join (
+                     select group_id
+                     from group_detail gd
+                     where dish_id = #{dishId}
+                     group by group_id
+                 ) gd on cg.group_id = gd.group_id
+        </if>
+        <where>
+            <if test="comboId != null">
+                and cg.combo_id = #{comboId}
+            </if>
+            <if test="groupIds != null">
+                and cg.group_id in
+                <foreach item="groupId" index="index" collection="groupIds" separator="," open="(" close=")">
+                    #{groupId}
+                </foreach>
+            </if>
+        </where>
+        group by cg.group_id;
+    </select>
+    <select id="selectComboGroupsByGIds" resultType="com.mason.domain.po.ComboGroup">
+        select cg.combo_id,cg.group_id
+        from combo_group cg
+        where cg.group_id in
+        <foreach item="groupId" index="index" collection="validGroupIds" separator="," open="(" close=")">
+            #{groupId}
+        </foreach>
+    </select>
+    <select id="selectGroupDishesByGIds" resultType="com.mason.domain.po.GroupDetail">
+        select gd.group_id,gd.dish_id
+        from group_detail gd
+        where gd.group_id in
+        <foreach item="groupId" index="index" collection="validGroupIds" separator="," open="(" close=")">
+            #{groupId}
+        </foreach>
+    </select>
+
+</mapper>

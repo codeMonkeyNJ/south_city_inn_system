@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mason.mapper.OutletMapper">
+
+    <select id="countOutletGoodsList" resultType="java.lang.Integer">
+        select count(*) as total from(
+            select dct.id, dct.type, dct.cover, dct.name, dct.className, dct.price, ifnull(dg.state,1) as state
+            from(
+                select d.id ,ct.goods_type as type,d.cover,d.name,ct.className,d.price
+                from dish d
+                join(
+                    select gc.goods_type,gc.dish_id,gc.combo_id, group_concat(mc.name separator ',') as className
+                    from goods_class gc
+                    left join menu_class mc on gc.menu_class_id = mc.id where mc.id !=0
+                    group by gc.goods_type,gc.dish_id,gc.combo_id
+                ) as ct on d.id = ct.dish_id
+                where d.state = 1
+            ) as dct
+            left join(
+                select *
+                from dept_goods
+                where dept_id = #{id}
+            ) dg on dct.type = dg.goods_type and dct.id = dg.goods_id
+            union all
+            select dct.id, dct.type, dct.cover, dct.name, dct.className, dct.price, ifnull(dg.state,1) as state
+            from(
+                select c.id ,ct.goods_type as type,c.cover,c.name,ct.className,c.def_price-c.reduce_price as price
+                from combo c
+                join(
+                    select gc.goods_type,gc.dish_id,gc.combo_id, group_concat(mc.name separator ',') as className
+                    from goods_class gc
+                    left join menu_class mc on gc.menu_class_id = mc.id
+                    where mc.id !=0
+                    group by gc.goods_type,gc.dish_id,gc.combo_id
+                ) as ct on c.id = ct.combo_id
+                 where c.state = 1
+            ) as dct
+            left join (
+                select *
+                from dept_goods
+                where dept_id = #{id}
+            ) dg on dct.type = dg.goods_type and dct.id = dg.goods_id
+        ) as t
+        <where>
+            <if test="name != null">
+                and t.name like concat('%',#{name},'%')
+            </if>
+            <if test="className != null">
+                and t.className like concat('%',#{className},'%')
+            </if>
+            <if test="type != null">
+                and t.type = #{type}
+            </if>
+        </where>
+    </select>
+    <select id="selectOutletGoodsList" resultType="com.mason.domain.vo.OutletGoodsVO">
+        select * from(
+            select dct.id, dct.type, dct.cover, dct.name, dct.className, dct.price, ifnull(dg.state,1) as state
+            from(
+                select d.id ,ct.goods_type as type,d.cover,d.name,ct.className,d.price
+                from dish d
+                join(
+                    select gc.goods_type,gc.dish_id,gc.combo_id, group_concat(mc.name separator ',') as className
+                    from goods_class gc
+                    left join menu_class mc on gc.menu_class_id = mc.id where mc.id !=0
+                    group by gc.goods_type,gc.dish_id,gc.combo_id
+                ) as ct on d.id = ct.dish_id
+                where d.state = 1
+            ) as dct
+            left join(
+                select *
+                from dept_goods
+                where dept_id = #{id}
+            ) dg on dct.type = dg.goods_type and dct.id = dg.goods_id
+            union all
+            select dct.id, dct.type, dct.cover, dct.name, dct.className, dct.price, ifnull(dg.state,1) as state
+            from(
+                select c.id ,ct.goods_type as type,c.cover,c.name,ct.className,c.def_price-c.reduce_price as price
+                from combo c
+                join(
+                    select gc.goods_type,gc.dish_id,gc.combo_id, group_concat(mc.name separator ',') as className
+                    from goods_class gc
+                    left join menu_class mc on gc.menu_class_id = mc.id
+                    where mc.id !=0
+                    group by gc.goods_type,gc.dish_id,gc.combo_id
+                ) as ct on c.id = ct.combo_id
+                where c.state = 1
+            ) as dct
+            left join (
+                select *
+                from dept_goods
+                where dept_id = #{id}
+            ) dg on dct.type = dg.goods_type and dct.id = dg.goods_id
+        ) as t
+        <where>
+            <if test="name != null">
+                and t.name like concat('%',#{name},'%')
+            </if>
+            <if test="className != null">
+                and t.className like concat('%',#{className},'%')
+            </if>
+            <if test="type != null">
+                and t.type = #{type}
+            </if>
+        </where>
+        limit #{skip},#{pageSize}
+    </select>
+</mapper>
