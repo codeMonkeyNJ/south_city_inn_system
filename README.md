@@ -4,8 +4,8 @@
 
 ## 项目web端演示地址
 http://111.230.184.58:18888
-username：tourist
-password：123456
+用户名：tourist
+密码：123456
 
 
 ## 数据库设计
