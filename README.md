@@ -4,7 +4,13 @@
 
 ## 项目web端演示地址
 
+## 数据库设计
 
+![数据库设计](C:\Users\codeM\Downloads\RE图.png)
+
+## 接口文档
+
+[完整API接口文档](/docs/接口文档.md)
 
 ## 项目特点
 
